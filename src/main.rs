@@ -1,4 +1,4 @@
-use axum::{Router, routing::get, response::IntoResponse, debug_handler};
+use axum::{Router,response::IntoResponse};
 
 
 
@@ -19,7 +19,7 @@ async fn fallback(uri: axum::http::Uri) -> impl IntoResponse {
 async fn main(){
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     let app = Router::new()
-        //.fallback(fallback)
+        .fallback(fallback)
         .nest("/api/v1",backend::routes::main_route::route_backend() )
         .nest("/", frontend::route::route_frontend());
     println!("Server open at: {}", "http://localhost:3000");
