@@ -16,6 +16,12 @@ tokio = { version = "1.34.0", features = ["full"] }
 tower = "0.4.13"
 strum_macros = "0.25.3"
 askama_axum = "0.4.0"
+mongodb = "2.1"
+jsonwebtoken = "8.3.0"
+axum-extra = { version = "0.7.2", features = ["cookie"] }
+rand_core = { version = "0.6.4", features = ["std"] }
+argon2 = "0.5.2"
+
 
 [dev-dependencies]
 cargo-watch = "8.4.1"

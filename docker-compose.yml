@@ -3,14 +3,20 @@ version: '3'
 services:
   mongodb:
     image: mongodb/mongodb-community-server
-    expose:
-      - 27017
+    # expose:
+    #   - 27017
+    ports:
+      - 27017:27017
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
   website:
     build: 
       context: .
+    ports:
+      - 3000:3000
+    env_file:
+      - ./.env
     depends_on:
       - mongodb
     volumes:

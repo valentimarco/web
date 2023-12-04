@@ -2,6 +2,7 @@ use axum::{Router,response::IntoResponse};
 
 
 
+
 mod frontend;
 mod backend;
 
@@ -20,7 +21,7 @@ async fn main(){
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     let app = Router::new()
         .fallback(fallback)
-        .nest("/api/v1",backend::routes::main_route::route_backend() )
+        .nest("/api/v1",crate::backend::main_route::route_backend().await )
         .nest("/", frontend::route::route_frontend());
     println!("Server open at: {}", "http://localhost:3000");
     axum::serve(listener,app).await.unwrap()
