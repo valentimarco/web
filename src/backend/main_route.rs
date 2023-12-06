@@ -5,10 +5,11 @@ use axum::routing::{get, post};
 use axum::{Router, extract::FromRef};
 use mongodb::Client;
 
-use crate::backend::config::{Config, self};
 
-use super::database_connection::db_connection;
+
 use super::routes::login_route::{register_handler, router_auth};
+use super::utils::config::Config;
+use super::utils::database_connection::db_connection;
 
 #[derive(Clone, FromRef)]
 pub struct AppState{
