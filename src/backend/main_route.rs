@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use axum::extract::State;
-use axum::routing::{get, post};
+
+
 use axum::{Router, extract::FromRef};
 use mongodb::Client;
 
 
 
-use super::routes::login_route::{register_handler, router_auth};
+use super::routes::login_route::router_auth;
 use super::utils::config::Config;
 use super::utils::database_connection::db_connection;
 

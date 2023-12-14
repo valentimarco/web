@@ -1,5 +1,6 @@
 use mongodb::bson::oid::ObjectId;
 use serde::{Serialize, Deserialize};
+use utoipa::ToSchema;
 
 
 #[derive(Serialize, Deserialize)]
@@ -19,7 +20,7 @@ impl User {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct UserSchema{
     pub username: String,
     pub email: String,

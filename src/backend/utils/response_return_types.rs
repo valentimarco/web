@@ -1,9 +1,12 @@
 use axum::Json;
 use axum::response::{IntoResponse,Response};
 use axum::http::StatusCode;
-use serde::Serialize;
 use serde_json::{json, Value};
 
+use log::debug;
+use log::error;
+use log::info;
+use log::warn;
 
 struct CustomResponse{
     status_code: StatusCode,
@@ -32,10 +35,22 @@ pub struct ErrorResponse{
 }
 
 impl ErrorResponse {
-    pub fn new(code: StatusCode, message: &str) -> Self{
-        Self { status_code: code, message: message.to_string() }
+    pub fn new() -> Self{
+        Self { status_code: StatusCode::INTERNAL_SERVER_ERROR, message: String::from("Server Exploded") }
+    }
+
+    pub fn code(mut self,code: StatusCode) -> Self{
+        self.status_code = code;
+        self
+    }
+    
+    pub fn message(mut self, message: &str) -> Self{
+        self.message = message.to_string();
+        self
     }
 }
+
+
 
 impl IntoResponse for ErrorResponse{
     fn into_response(self) -> Response {
@@ -50,23 +65,35 @@ impl IntoResponse for ErrorResponse{
 
 #[derive(Debug)]
 pub enum Error{
-    LoginFail(String),
-    ServerError(String)
+    MongoError(mongodb::error::Error)
     
+}
+
+impl From<mongodb::error::Error> for Error {
+    fn from(value: mongodb::error::Error) -> Self {
+        Error::MongoError(value)
+    }
 }
 
 impl Error {
     pub fn client_status_and_error(&self) -> ErrorResponse{
         match self {
             // Self::LoginFail(message) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, &message),
-            Self::ServerError(message) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, &message),
-            _ => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "Server Exploded"),
+            // Self::ServerError(message) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, &message),
+            Self::MongoError(error) => {
+                let error_db = error;
+                error!("Error Database {}", error_db);
+                ErrorResponse::new().code(StatusCode::INTERNAL_SERVER_ERROR).message("Database error")
+            },
+            _ => ErrorResponse::new(),
             
 
         }
     }
     
 }
+
+
 
 impl IntoResponse for Error{
     fn into_response(self) -> Response{

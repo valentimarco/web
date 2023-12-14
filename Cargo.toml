@@ -21,6 +21,11 @@ jsonwebtoken = "8.3.0"
 axum-extra = { version = "0.7.2", features = ["cookie"] }
 rand_core = { version = "0.6.4", features = ["std"] }
 argon2 = "0.5.2"
+env_logger = "0.10.1"
+log = "0.4.20"
+utoipa = { version = "4.1.0", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "5.0.0", features = ["axum"] }
+
 
 
 [dev-dependencies]
