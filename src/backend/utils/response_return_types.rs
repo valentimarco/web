@@ -8,22 +8,46 @@ use log::error;
 use log::info;
 use log::warn;
 
-struct CustomResponse{
+pub struct CustomResponse{
     status_code: StatusCode,
-    data: Json<Value>
+    status: String,
+    data: Option<Json<Value>>
 }
 
 impl CustomResponse{
-    pub fn new(code: StatusCode, json: Json<Value>) -> Self{
-        Self { status_code: code,  data: json }
+    pub fn new() -> Self{
+        Self { status_code: StatusCode::OK, status: "success".to_string(),  data: None }
+    }
+    pub fn set_code(mut self,code: StatusCode) -> Self{
+        self.status_code = code;
+        self
+    }
+    
+    pub fn set_status(mut self, status: &str) -> Self{
+        self.status = status.to_string();
+        self
+    }
+
+    pub fn set_data(mut self, data: Option<Json<Value>>) -> Self{
+        self.data = data;
+        self
     }
 }
 
 impl IntoResponse for CustomResponse{
     fn into_response(self) -> Response {
+        let mut response = json!({
+            "status": self.status,
+            "data" : null
+        });
+        if let Some(Json(json_response_from_handler)) = self.data{
+            response["data"] = json_response_from_handler
+            
+        }
+        let json_response = Json(response);
         (
-            self.status_code, 
-            self.data
+            self.status_code,
+            json_response
         ).into_response()
     }
 }
@@ -39,12 +63,12 @@ impl ErrorResponse {
         Self { status_code: StatusCode::INTERNAL_SERVER_ERROR, message: String::from("Server Exploded") }
     }
 
-    pub fn code(mut self,code: StatusCode) -> Self{
+    pub fn set_code(mut self,code: StatusCode) -> Self{
         self.status_code = code;
         self
     }
     
-    pub fn message(mut self, message: &str) -> Self{
+    pub fn set_message(mut self, message: &str) -> Self{
         self.message = message.to_string();
         self
     }
@@ -65,7 +89,10 @@ impl IntoResponse for ErrorResponse{
 
 #[derive(Debug)]
 pub enum Error{
-    MongoError(mongodb::error::Error)
+    MongoError(mongodb::error::Error),
+    RegisterError(),
+    GenericError(String)
+
     
 }
 
@@ -83,9 +110,16 @@ impl Error {
             Self::MongoError(error) => {
                 let error_db = error;
                 error!("Error Database {}", error_db);
-                ErrorResponse::new().code(StatusCode::INTERNAL_SERVER_ERROR).message("Database error")
+                ErrorResponse::new().set_code(StatusCode::INTERNAL_SERVER_ERROR).set_message("Database error")
             },
-            _ => ErrorResponse::new(),
+            Self::RegisterError() =>{
+                error!("Error Register");
+                ErrorResponse::new().set_code(StatusCode::CONFLICT).set_message("user already register with this email and username")
+            }
+            Self::GenericError(message) => {
+                error!("{}", message);
+                ErrorResponse::new().set_message(message.as_str())
+            }
             
 
         }

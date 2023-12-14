@@ -1,4 +1,4 @@
-use axum::{Router, routing::{Route, get}};
+use axum::{Router, routing::get};
 
 use super::pages::index::render_index;
 

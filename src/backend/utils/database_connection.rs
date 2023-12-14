@@ -1,4 +1,4 @@
-use mongodb::{Client, options::{ClientOptions, ResolverConfig, Credential}};
+use mongodb::{Client, options::{ClientOptions, ResolverConfig}};
 
 pub async fn db_connection(client_uri: String)-> Result<Client,mongodb::error::Error>{
     // A Client is needed to connect to MongoDB:

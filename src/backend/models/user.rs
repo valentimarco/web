@@ -16,6 +16,9 @@ impl User {
     pub fn new(id: Option<ObjectId>, username: String, email: String, password: String, op_level: i8) -> Self {
          Self { id, username, email, password, op_level } 
     }
+    pub fn get_username(self) -> String{
+        self.username
+    }
 }
 
 
