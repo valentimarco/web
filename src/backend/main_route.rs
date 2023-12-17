@@ -11,7 +11,8 @@ use super::utils::database_connection::db_connection;
 
 #[derive(Clone, FromRef)]
 pub struct AppState{
-    pub client_db: Client
+    pub client_db: Client,
+    pub config_app: Config
 }
 
 
@@ -23,7 +24,8 @@ pub async fn route_backend() -> Router {
     
     // TODO: well well well, maybe i need to change this part xd 
     let app_state = Arc::new(AppState {
-        client_db: db_connection(config.database_url).await.unwrap()
+        client_db: db_connection(config.database_url.clone()).await.unwrap(),
+        config_app: config
     });
     
     // https://stackoverflow.com/questions/40984932/what-happens-when-an-arc-is-cloned

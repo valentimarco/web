@@ -16,15 +16,27 @@ impl User {
     pub fn new(id: Option<ObjectId>, username: String, email: String, password: String, op_level: i8) -> Self {
          Self { id, username, email, password, op_level } 
     }
-    pub fn get_username(self) -> String{
-        self.username
+    pub fn get_username(&self) -> String{
+        self.username.clone()
+    }
+    pub fn get_password(&self) -> String{
+        self.password.clone()
+    }
+    pub fn get_id(&self) -> String{
+        self.id.unwrap().to_string().clone()
     }
 }
 
 
 #[derive(Serialize, Deserialize)]
-pub struct UserSchema{
+pub struct RegisterUserSchema{
     pub username: String,
     pub email: String,
+    pub password: String
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LoginUserSchema{
+    pub username: String,
     pub password: String
 }

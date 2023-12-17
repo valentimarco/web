@@ -1,6 +1,6 @@
 use axum::Json;
 use axum::response::{IntoResponse,Response};
-use axum::http::StatusCode;
+use axum::http::{StatusCode, HeaderMap, header, HeaderName};
 use serde_json::{json, Value};
 
 use log::debug;
@@ -11,12 +11,13 @@ use log::warn;
 pub struct CustomResponse{
     status_code: StatusCode,
     status: String,
+    headers: HeaderMap,
     data: Option<Json<Value>>
 }
 
 impl CustomResponse{
     pub fn new() -> Self{
-        Self { status_code: StatusCode::OK, status: "success".to_string(),  data: None }
+        Self { status_code: StatusCode::OK, status: "success".to_string(),  data: None , headers: HeaderMap::new()}
     }
     pub fn set_code(mut self,code: StatusCode) -> Self{
         self.status_code = code;
@@ -30,6 +31,11 @@ impl CustomResponse{
 
     pub fn set_data(mut self, data: Option<Json<Value>>) -> Self{
         self.data = data;
+        self
+    }
+    
+    pub fn set_header(mut self, header: HeaderName, value: String) -> Self{
+        self.headers.insert(header, value.parse().unwrap());
         self
     }
 }
@@ -47,6 +53,7 @@ impl IntoResponse for CustomResponse{
         let json_response = Json(response);
         (
             self.status_code,
+            self.headers,
             json_response
         ).into_response()
     }
@@ -91,9 +98,9 @@ impl IntoResponse for ErrorResponse{
 pub enum Error{
     MongoError(mongodb::error::Error),
     RegisterError(),
-    GenericError(String)
-
-    
+    LoginError(String),
+    ServerError(String),
+    GenericError(String,String),
 }
 
 impl From<mongodb::error::Error> for Error {
@@ -105,8 +112,10 @@ impl From<mongodb::error::Error> for Error {
 impl Error {
     pub fn client_status_and_error(&self) -> ErrorResponse{
         match self {
-            // Self::LoginFail(message) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, &message),
-            // Self::ServerError(message) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, &message),
+            Self::ServerError(error) => {
+                error!("Error Server: {}", error);
+                ErrorResponse::new().set_code(StatusCode::INTERNAL_SERVER_ERROR)
+            },
             Self::MongoError(error) => {
                 let error_db = error;
                 error!("Error Database {}", error_db);
@@ -115,10 +124,13 @@ impl Error {
             Self::RegisterError() =>{
                 error!("Error Register");
                 ErrorResponse::new().set_code(StatusCode::CONFLICT).set_message("user already register with this email and username")
-            }
-            Self::GenericError(message) => {
-                error!("{}", message);
-                ErrorResponse::new().set_message(message.as_str())
+            },
+            Self::LoginError(message) =>{
+                ErrorResponse::new().set_code(StatusCode::BAD_REQUEST).set_message(&message)
+            },
+            Self::GenericError(error_message, custom_message) => {
+                error!("{}", error_message);
+                ErrorResponse::new().set_message(custom_message.as_str())
             }
             
 
