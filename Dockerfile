@@ -1,11 +1,11 @@
 # Using official rust base image
-FROM rust:alpine3.16
-
+FROM rust:1.74.1-slim
+ENV RUST_LOG=TRACE
 # Set the application directory
 WORKDIR /app
-
+RUN apt update
 # Install musl-tools to make many crates compile successfully
-RUN apk add --no-cache musl-dev
+RUN apt install -y pkg-config openssl libssl-dev
 
 # Install cargo-watch
 RUN cargo install cargo-watch
