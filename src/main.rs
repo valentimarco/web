@@ -2,13 +2,11 @@ use std::{path::PathBuf, pin::Pin};
 
 use axum::{Router,response::IntoResponse, extract::Request};
 use hyper::body::Incoming;
-use hyper_util::rt::{TokioIo, TokioExecutor};
-use openssl::ssl::{SslAcceptor, SslMethod, SslFiletype, Ssl};
+use hyper_util::rt::{TokioExecutor, TokioIo};
+use openssl::ssl::{Ssl, SslAcceptor, SslFiletype, SslMethod};
 use tokio::net::TcpListener;
 use tokio_openssl::SslStream;
 use tower::Service;
-
-
 
 
 mod frontend;
@@ -22,20 +20,26 @@ async fn fallback(uri: axum::http::Uri) -> impl IntoResponse {
 
 
 
-//Semes like that merge fn don't accept a function that return the Router object, caused by askama_axum library
+//Seems like that merge fn don't accept a function that return the Router object, caused by askama_axum library
 
 #[tokio::main]
-async fn main(){
+async fn main() {
     env_logger::init();
-    // let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    // let app = Router::new()
-    //     .fallback(fallback)
-    //     .nest("/api/v1",crate::backend::main_route::route_backend().await )
-    //     .nest("/", frontend::route::route_frontend());
-    // println!("Server open at: {}", "http://localhost:3000");
-    // axum::serve(listener,app).await.unwrap()
+    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let app = Router::new()
+        .fallback(fallback)
+        .nest("/api/v1", backend::main_route::route_backend().await)
+        .nest("/", frontend::route::route_frontend());
+    println!("Server open at: {}", "http://localhost:3000");
+    http_server(listener, app).await;
+}
+    
 
+async fn http_server(tcp_listener: TcpListener, app: Router){
+    axum::serve(tcp_listener, app).await.unwrap()
+}
     //https://certbot.eff.org/ to update the ssl certs
+async fn https_server(tcp_listener: TcpListener, app: Router){    
     let mut tls_builder = SslAcceptor::mozilla_modern_v5(SslMethod::tls()).unwrap();
 
     tls_builder
@@ -61,13 +65,8 @@ async fn main(){
     tls_builder.check_private_key().unwrap();
 
     let tls_acceptor = tls_builder.build();
-
-    let tcp_listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+        
     log::info!("HTTPS server listening on localhost:3000. To contact curl -k https://localhost:3000");
-    let app = Router::new()
-        .fallback(fallback)
-        .nest("/api/v1",crate::backend::main_route::route_backend().await )
-        .nest("/", frontend::route::route_frontend());
 
     futures_util::pin_mut!(tcp_listener);
 
@@ -113,5 +112,6 @@ async fn main(){
             }
         });
     }
+    
     
 }

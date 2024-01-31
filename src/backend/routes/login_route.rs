@@ -7,7 +7,8 @@ use crate::backend::{
 };
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher, PasswordHash, PasswordVerifier};
 use axum::{extract::State, http::StatusCode, routing::{post, get}, Json, Router};
-use axum_extra::extract::cookie::{Cookie, SameSite};
+use axum_extra::extract::cookie::{Cookie,SameSite};
+use cookie::CookieBuilder;
 use jsonwebtoken::{encode, Header, EncodingKey};
 use mongodb::bson::doc;
 use rand_core::OsRng;
@@ -26,9 +27,10 @@ pub async fn register_handler(
 ) -> Result<CustomResponse, Error> {
     let client = &data_state.client_db;
     let user_collection = client.database("Website").collection::<User>("Users");
+    let filter = doc! { "$or": [ { "username": body.username.as_str() }, { "email": body.email.as_str() } ] };
     let user_exist = user_collection
         .find_one(
-            doc! { "username": body.username.as_str(),"email": body.email.as_str() },
+            filter,
             None,
         )
         .await?;
@@ -54,13 +56,10 @@ pub async fn register_handler(
         .await?
         .ok_or(Error::ServerError(String::from("Error in the retrive of the user in db")))?;
         
-
-    let json_respone = json!({
-        "username": user_retrive_db.get_username()
-    });
+    
     let final_response = CustomResponse::new()
         .set_code(StatusCode::CREATED)
-        .set_data(Some(Json(json_respone)));
+        .set_data(None);
 
     return Ok(final_response);
 }
@@ -110,12 +109,12 @@ pub async fn login_user_handler(
     })?;
 
 
-    let cookie = Cookie::build("token", token.to_owned())
+    let cookie = Cookie::build(("token",token))
         .path("/")
         .max_age(time::Duration::hours(1))
         .same_site(SameSite::Lax)
         .http_only(true)
-        .finish();
+        .build();
 
     let final_response = CustomResponse::new()
         .set_code(StatusCode::OK)
@@ -126,12 +125,12 @@ pub async fn login_user_handler(
 
 //testing logout
 pub async fn logout_handler() -> Result<CustomResponse, Error> {
-    let cookie = Cookie::build("token", "")
+    let cookie = Cookie::build(("token", ""))
         .path("/")
         .max_age(time::Duration::hours(-1))
         .same_site(SameSite::Lax)
         .http_only(true)
-        .finish();
+        .build();
 
     //Needs a blacklist jwt thing... 
     

@@ -87,7 +87,7 @@ impl IntoResponse for ErrorResponse{
     fn into_response(self) -> Response {
         (
             self.status_code, 
-            Json(json!({ "message": self.message}))
+            Json(json!({ "status": "error", "message": self.message}))
         ).into_response()
         
     }
