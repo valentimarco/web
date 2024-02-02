@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
+use crate::backend::middlewares::mw_auth_jwt::auth;
+use crate::backend::models::dto::login_user_dto::LoginUserDTO;
+use crate::backend::models::dto::register_user_dto::RegisterUserDTO;
 use crate::backend::{
     main_route::AppState,
-    models::{
-        tokenclaims::TokenClaims,
-        user::{LoginUserSchema, RegisterUserSchema, User},
-    },
+    models::{token_claims::TokenClaims, user::User},
     utils::response_return_types::{CustomResponse, Error},
 };
 use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use axum::middleware::from_fn_with_state;
 use axum::{
     extract::State,
     http::StatusCode,
@@ -20,23 +21,28 @@ use jsonwebtoken::{encode, EncodingKey, Header};
 use mongodb::bson::doc;
 use rand_core::OsRng;
 
-pub fn router_auth() -> Router<Arc<AppState>> {
+pub fn router_auth(app_state: Arc<AppState>) -> Router<Arc<AppState>> {
     Router::new()
         .route("/register", post(register_handler))
         .route("/login", post(login_user_handler))
-        .route("/logout", get(logout_handler))
+        .route(
+            "/logout",
+            get(logout_handler).route_layer(from_fn_with_state(app_state.clone(), auth)),
+        )
 }
 
 #[utoipa::path(
     post,
     path = "/register",
     responses(
-        (status = 201, body = [RegisterUserSchema])
+        (status = 201, body = [RegisterUserDTO]),
+        (status = 500),
+        (status = 409, description="User already exists")
     )
 )]
 pub async fn register_handler(
     State(data_state): State<Arc<AppState>>,
-    Json(body): Json<RegisterUserSchema>,
+    Json(body): Json<RegisterUserDTO>,
 ) -> Result<CustomResponse, Error> {
     let client = &data_state.client_db;
     let user_collection = client.database("Website").collection::<User>("Users");
@@ -65,6 +71,7 @@ pub async fn register_handler(
         .ok_or(Error::ServerError(String::from(
             "Error in the retrive of the user in db",
         )))?;
+    //TODO: The registration must create an jwt token
 
     let final_response = CustomResponse::new()
         .set_code(StatusCode::CREATED)
@@ -72,10 +79,17 @@ pub async fn register_handler(
 
     return Ok(final_response);
 }
-
+#[utoipa::path(
+    post,
+    path = "/login",
+    responses(
+        (status = 201, body = [LoginUserDTO]),
+        (status = 400)
+    )
+)]
 pub async fn login_user_handler(
     State(data_state): State<Arc<AppState>>,
-    Json(body): Json<LoginUserSchema>,
+    Json(body): Json<LoginUserDTO>,
 ) -> Result<CustomResponse, Error> {
     let client = &data_state.client_db;
     let user_collection = client.database("Website").collection::<User>("Users");

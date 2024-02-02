@@ -2,7 +2,7 @@ use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct User {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     //if id is set to None, mongo will generate it
@@ -38,17 +38,4 @@ impl User {
     pub fn get_id(&self) -> String {
         self.id.unwrap().to_string().clone()
     }
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct RegisterUserSchema {
-    pub username: String,
-    pub email: String,
-    pub password: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct LoginUserSchema {
-    pub username: String,
-    pub password: String,
 }

@@ -35,6 +35,7 @@ cookie = "0.17.0"
 utoipa = { version = "4.2.0", features = ["axum_extras"] }
 utoipa-rapidoc = { version = "3.0.0", features = ["axum"] }
 dotenv = "0.15.0"
+bson = "1.2.1"
 
 
 [dev-dependencies]

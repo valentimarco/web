@@ -95,6 +95,7 @@ pub enum Error {
     MongoError(mongodb::error::Error),
     RegisterError(),
     LoginError(String),
+    AuthError(String),
     ServerError(String),
     GenericError(String, String),
 }
@@ -132,6 +133,9 @@ impl Error {
                 error!("{}", error_message);
                 ErrorResponse::new().set_message(custom_message.as_str())
             }
+            Error::AuthError(message) => ErrorResponse::new()
+                .set_code(StatusCode::UNAUTHORIZED)
+                .set_message(message),
         }
     }
 }

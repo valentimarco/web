@@ -1,28 +1,34 @@
 use std::sync::Arc;
 
+use crate::backend::middlewares::mw_auth_jwt::auth;
+use axum::middleware::from_fn_with_state;
 use axum::{extract::FromRef, Router};
 use mongodb::Client;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 
-
 use super::routes::login_route::router_auth;
-use super::utils::config::Config;
+use super::utils::config_app::ConfigApp;
 use super::utils::database_connection::db_connection;
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
     pub client_db: Client,
-    pub config_app: Config,
+    pub config_app: ConfigApp,
 }
 
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        crate::backend::routes::login_route::register_handler
+        crate::backend::routes::login_route::register_handler,
+        crate::backend::routes::login_route::login_user_handler
     ),
     components(
-        schemas(crate::backend::models::user::RegisterUserSchema)
+        schemas(crate::backend::models::dto::register_user_dto::RegisterUserDTO),
+        schemas(crate::backend::models::dto::login_user_dto::LoginUserDTO),
+    ),
+    servers(
+        (url="/api/v1")
     ),
     modifiers(&SecurityAddon),
     tags(
@@ -45,7 +51,7 @@ impl Modify for SecurityAddon {
 }
 
 pub async fn route_backend() -> Router {
-    let config = Config::init();
+    let config = ConfigApp::init();
 
     // TODO: well well well, maybe i need to change this part xd
     let app_state = Arc::new(AppState {
@@ -54,6 +60,7 @@ pub async fn route_backend() -> Router {
     });
 
     // https://stackoverflow.com/questions/40984932/what-happens-when-an-arc-is-cloned
-    Router::new().merge(router_auth().with_state(app_state.clone()))
-    //.with_state(app_state.clone())
+    Router::new()
+        .merge(router_auth(app_state.clone()))
+        .with_state(app_state)
 }
