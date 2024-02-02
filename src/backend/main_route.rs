@@ -4,7 +4,7 @@ use axum::{extract::FromRef, Router};
 use mongodb::Client;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::{Modify, OpenApi};
-use utoipa_rapidoc::RapiDoc;
+
 
 use super::routes::login_route::router_auth;
 use super::utils::config::Config;
