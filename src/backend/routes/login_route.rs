@@ -2,25 +2,38 @@ use std::sync::Arc;
 
 use crate::backend::{
     main_route::AppState,
-    models::{user::{User, RegisterUserSchema, LoginUserSchema}, tokenclaims::TokenClaims},
+    models::{
+        tokenclaims::TokenClaims,
+        user::{LoginUserSchema, RegisterUserSchema, User},
+    },
     utils::response_return_types::{CustomResponse, Error},
 };
-use argon2::{password_hash::SaltString, Argon2, PasswordHasher, PasswordHash, PasswordVerifier};
-use axum::{extract::State, http::StatusCode, routing::{post, get}, Json, Router};
-use axum_extra::extract::cookie::{Cookie,SameSite};
-use cookie::CookieBuilder;
-use jsonwebtoken::{encode, Header, EncodingKey};
+use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    routing::{get, post},
+    Json, Router,
+};
+use axum_extra::extract::cookie::{Cookie, SameSite};
+use jsonwebtoken::{encode, EncodingKey, Header};
 use mongodb::bson::doc;
 use rand_core::OsRng;
-use serde_json::json;
 
 pub fn router_auth() -> Router<Arc<AppState>> {
     Router::new()
-    .route("/register", post(register_handler))
-    .route("/login", post(login_user_handler))
-    .route("/logout", get(logout_handler))
+        .route("/register", post(register_handler))
+        .route("/login", post(login_user_handler))
+        .route("/logout", get(logout_handler))
 }
 
+#[utoipa::path(
+    post,
+    path = "/register",
+    responses(
+        (status = 201, body = [RegisterUserSchema])
+    )
+)]
 pub async fn register_handler(
     State(data_state): State<Arc<AppState>>,
     Json(body): Json<RegisterUserSchema>,
@@ -28,12 +41,7 @@ pub async fn register_handler(
     let client = &data_state.client_db;
     let user_collection = client.database("Website").collection::<User>("Users");
     let filter = doc! { "$or": [ { "username": body.username.as_str() }, { "email": body.email.as_str() } ] };
-    let user_exist = user_collection
-        .find_one(
-            filter,
-            None,
-        )
-        .await?;
+    let user_exist = user_collection.find_one(filter, None).await?;
 
     if let Some(_) = user_exist {
         let response = Error::RegisterError();
@@ -51,19 +59,19 @@ pub async fn register_handler(
     let user_insert_db = user_collection.insert_one(user_to_insert, None).await?;
 
     let id = user_insert_db.inserted_id.as_object_id().unwrap();
-    let user_retrive_db = user_collection
+    user_collection
         .find_one(doc! {"_id": id}, None)
         .await?
-        .ok_or(Error::ServerError(String::from("Error in the retrive of the user in db")))?;
-        
-    
+        .ok_or(Error::ServerError(String::from(
+            "Error in the retrive of the user in db",
+        )))?;
+
     let final_response = CustomResponse::new()
         .set_code(StatusCode::CREATED)
         .set_data(None);
 
     return Ok(final_response);
 }
-
 
 pub async fn login_user_handler(
     State(data_state): State<Arc<AppState>>,
@@ -72,21 +80,22 @@ pub async fn login_user_handler(
     let client = &data_state.client_db;
     let user_collection = client.database("Website").collection::<User>("Users");
     let user_register: User = user_collection
-        .find_one(
-            doc! { "username": body.username.as_str()},
-            None,
-        )
+        .find_one(doc! { "username": body.username.as_str()}, None)
         .await?
         .ok_or(Error::LoginError(String::from("User don't exist")))?; //need to be revisited
 
     let user_password = user_register.get_password();
     let user_hash_password = PasswordHash::new(&user_password)
         .map_err(|_error| Error::ServerError(String::from("Problem with user password hashing")))?;
-    
-    let is_valid = Argon2::default().verify_password(body.password.as_bytes(), &user_hash_password).map_or(false, |_| true);
-    
-    if !is_valid{
-        return Err(Error::LoginError(String::from("User or password are wrong")));
+
+    let is_valid = Argon2::default()
+        .verify_password(body.password.as_bytes(), &user_hash_password)
+        .map_or(false, |_| true);
+
+    if !is_valid {
+        return Err(Error::LoginError(String::from(
+            "User or password are wrong",
+        )));
     }
 
     let user_id = user_register.get_id();
@@ -104,12 +113,9 @@ pub async fn login_user_handler(
         &claims,
         &EncodingKey::from_secret(data_state.config_app.jwt_secret.as_ref()),
     )
-    .map_err(|e| {
-        return Error::ServerError(e.to_string())
-    })?;
+    .map_err(|e| return Error::ServerError(e.to_string()))?;
 
-
-    let cookie = Cookie::build(("token",token))
+    let cookie = Cookie::build(("token", token))
         .path("/")
         .max_age(time::Duration::hours(1))
         .same_site(SameSite::Lax)
@@ -122,7 +128,6 @@ pub async fn login_user_handler(
     Ok(final_response)
 }
 
-
 //testing logout
 pub async fn logout_handler() -> Result<CustomResponse, Error> {
     let cookie = Cookie::build(("token", ""))
@@ -132,11 +137,11 @@ pub async fn logout_handler() -> Result<CustomResponse, Error> {
         .http_only(true)
         .build();
 
-    //Needs a blacklist jwt thing... 
-    
+    //Needs a blacklist jwt thing...
+
     let final_response = CustomResponse::new()
         .set_code(StatusCode::OK)
         .set_header(axum::http::header::SET_COOKIE, cookie.to_string());
-    
+
     Ok(final_response)
 }

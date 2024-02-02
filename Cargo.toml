@@ -32,7 +32,9 @@ log = "0.4.20"
 chrono = { version = "0.4.33", features = ["serde"] }
 time = "0.3.30"
 cookie = "0.17.0"
-
+utoipa = { version = "4.2.0", features = ["axum_extras"] }
+utoipa-rapidoc = { version = "3.0.0", features = ["axum"] }
+dotenv = "0.15.0"
 
 
 [dev-dependencies]
