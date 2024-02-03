@@ -24,4 +24,4 @@ services:
       - mongodb
     volumes:
       - .:/app
-    command: sh -c "cargo watch -q -c -w src/ -x 'run'"
+    command: sh -c "cargo watch -q -c -x 'run'"

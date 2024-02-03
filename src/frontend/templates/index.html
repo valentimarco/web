@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust HTMX Example</title>
+    <!-- Include HTMX from CDN -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <form hx-post="/api/v1/login" hx-headers='{"Content-Type": "application/json"}' hx-trigger="submit" hx-swap="innerHTML" hx-target="#result" onsubmit="return handleFormSubmit(event)">
+        <input type="text" id="username" name="username" placeholder="Enter your name" />
+        <input type="password" id="password" name="password" placeholder="Enter your password" />
+        <button type="submit">Submit</button>
+    </form>
+    
+    <div id="result">
+        <p>Success</p>
+    </div>
+</body>
+</html>

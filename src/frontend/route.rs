@@ -1,6 +1,5 @@
-use crate::backend::main_route::AppState;
 use axum::{routing::get, Router};
-use std::sync::Arc;
+
 
 use super::pages::index::render_index;
 

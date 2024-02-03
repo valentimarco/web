@@ -4,10 +4,8 @@ use axum::body::Body;
 use axum::http::Response;
 use axum::{
     extract::State,
-    http::{header, Request, StatusCode},
-    middleware::Next,
-    response::IntoResponse,
-    Json,
+    http::{header, Request},
+    middleware::Next
 };
 
 use axum_extra::extract::cookie::CookieJar;
@@ -15,12 +13,11 @@ use jsonwebtoken::{decode, DecodingKey, Validation};
 
 
 use mongodb::bson::doc;
-use serde::Serialize;
 
 use crate::backend::main_route::AppState;
 use crate::backend::models::token_claims::TokenClaims;
 use crate::backend::models::user::User;
-use crate::backend::utils::response_return_types::{CustomResponse, Error};
+use crate::backend::utils::response_return_types::Error;
 
 pub async fn auth(
     cookie_jar: CookieJar,

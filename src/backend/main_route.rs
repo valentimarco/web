@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use crate::backend::middlewares::mw_auth_jwt::auth;
-use axum::middleware::from_fn_with_state;
 use axum::{extract::FromRef, Router};
 use mongodb::Client;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
