@@ -1,4 +1,4 @@
-# Website
+# Website (DEAD)
 
 Website wrote in rust and htmx to do several things:
 
